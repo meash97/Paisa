@@ -446,13 +446,18 @@ function openSheet(key,render,opts){opts=opts||{};sheets.push({key,render,live:o
 function closeSheet(){if(sheets.length)history.back();}
 window.addEventListener('popstate',()=>{const want=(history.state&&history.state.n)||0;while(sheets.length>want)sheets.pop();closeMenu();drawSheets();});
 history.replaceState({n:0},'');
-function drawSheets(){const host=document.getElementById('sheets');host.innerHTML='';sheets.forEach((s,i)=>{if(s.cls==='tx'){const sc=document.createElement('div');sc.className='txscrim';sc.onclick=closeSheet;host.appendChild(sc);}const d=document.createElement('div');d.className='sheet '+s.cls;d.id='sheet-'+i;d.innerHTML=s.render();host.appendChild(d);});document.body.style.overflow=sheets.length?'hidden':'';document.getElementById('fab').style.display=sheets.length?'none':'';}
-function rerenderTop(){if(!sheets.length)return;const i=sheets.length-1;const d=document.getElementById('sheet-'+i);if(d){const sc=d.scrollTop;d.innerHTML=sheets[i].render();d.scrollTop=sc;}}
+function drawSheets(){const host=document.getElementById('sheets');host.innerHTML='';sheets.forEach((s,i)=>{if(s.cls==='tx'){const sc=document.createElement('div');sc.className='txscrim';sc.onclick=closeSheet;host.appendChild(sc);}const d=document.createElement('div');d.className='sheet '+s.cls;d.id='sheet-'+i;d.innerHTML=s.render();host.appendChild(d);if(s.cls==='tx'){attachTxSwipe(d);scrollChipIntoView(d);}});document.body.style.overflow=sheets.length?'hidden':'';document.getElementById('fab').style.display=sheets.length?'none':'';}
+function rerenderTop(){if(!sheets.length)return;const i=sheets.length-1;const d=document.getElementById('sheet-'+i);if(d){const sc=d.scrollTop;d.innerHTML=sheets[i].render();d.scrollTop=sc;if(sheets[i].cls==='tx')scrollChipIntoView(d);}}
 function refresh(){save();render();sheets.forEach((s,i)=>{if(!s.live)return;const d=document.getElementById('sheet-'+i);if(d){const sc=d.scrollTop;d.innerHTML=s.render();d.scrollTop=sc;}});}
 let toastT=null;function toast(m){let t=document.querySelector('.toast');if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);}t.textContent=m;clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2200);}
 function menu(e,items){closeMenu();const ov=document.getElementById('overlay');const r=e.currentTarget.getBoundingClientRect();const m=document.createElement('div');m.className='menu';m.innerHTML=items.map((it,i)=>`<button class="${it.on?'on':''}" data-i="${i}">${it.on?ic('check'):'<span style="width:22px"></span>'}<span>${esc(it.label)}</span></button>`).join('');const sc=document.createElement('div');sc.className='scrim';sc.onclick=closeMenu;ov.appendChild(sc);ov.appendChild(m);m.querySelectorAll('button').forEach(b=>b.onclick=()=>{closeMenu();items[+b.dataset.i].act();});const mw=m.offsetWidth,mh=m.offsetHeight;let left=Math.min(r.right-mw,window.innerWidth-mw-10);if(left<10)left=10;let top=r.bottom+6;if(top+mh>window.innerHeight-10)top=Math.max(10,r.top-mh-6);m.style.left=left+'px';m.style.top=top+'px';}
 function closeMenu(){document.getElementById('overlay').innerHTML='';}
 function confirmDlg(msg,ok){const ov=document.getElementById('overlay');ov.innerHTML=`<div class="scrim" style="background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:24px"><div class="card" style="max-width:380px;width:100%;margin:0"><div style="font-size:18px;line-height:1.45">${esc(msg)}</div><div class="row" style="justify-content:flex-end;gap:10px;margin-top:20px"><button class="btn sm ghost" id="dlgNo">Cancel</button><button class="btn sm" id="dlgOk">OK</button></div></div></div>`;document.getElementById('dlgNo').onclick=closeMenu;document.getElementById('dlgOk').onclick=()=>{closeMenu();ok();};}
+
+/* swipe gestures on the transaction sheet: keypad = change account, upper area = change type */
+function attachTxSwipe(d){let sx=0,sy=0,t0=null,moved=false;d.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;t0=e.target;moved=false;},{passive:true});
+ d.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<55||Math.abs(dy)>Math.abs(dx)*0.6)return;if(!t0||t0.closest('.chips,.subchips,input,.seg'))return;const dir=dx<0?1:-1;if(t0.closest('.keypad'))A.txCycleAcc(dir);else if(t0.closest('.txbody,.hdr'))A.txCycleType(dir);},{passive:true});}
+function scrollChipIntoView(d){const on=d.querySelector('.chips .chip.on');if(on&&on.scrollIntoView)try{on.scrollIntoView({inline:'center',block:'nearest'});}catch(e){}}
 /* ===================== MAIN SCREENS ===================== */
 const A={};
 function render(){const sc=document.getElementById('screen');const top=sc.scrollTop;sc.innerHTML=({home:renderHome,cats:renderCats,ana:renderAna,tx:renderTx})[ui.tab]();
@@ -634,6 +639,8 @@ A.key=k=>{const d=ui.tx;let e=d.expr;const ops='+-*/';
  else{const last=e.split(/[+\-*/]/).pop();if(last==='0')e=e.slice(0,-1);if(last.replace('.','').length<10)e+=k;}
  d.expr=e;updateAmt();};
 function updateAmt(){const el=document.getElementById('amt');if(el){el.textContent=amtDisplay();el.className='amt '+(ui.tx.expr?'':'dim');}}
+A.txCycleAcc=dir=>{const accs=liveAccounts();if(!accs.length)return;const d=ui.tx;let i=accs.findIndex(a=>a.id===d.accountId);i=(i+dir+accs.length)%accs.length;if(d.type==='transfer'&&accs[i].id===d.toAccountId)i=(i+dir+accs.length)%accs.length;d.accountId=accs[i].id;rerenderTop();const el=document.getElementById('sheet-'+(sheets.length-1));if(el)scrollChipIntoView(el);if(navigator.vibrate)try{navigator.vibrate(8);}catch(e){}};
+A.txCycleType=dir=>{const T=['income','expense','transfer'];const i=(T.indexOf(ui.tx.type)+dir+3)%3;A.txType(T[i]);if(navigator.vibrate)try{navigator.vibrate(8);}catch(e){}};
 A.txType=k=>{const d=ui.tx;d.type=k;if(k!=='transfer'){const c=cat(d.categoryId);if(!c||c.type!==k){const f=catsOf(k)[0];d.categoryId=f?f.id:null;d.subId=null;}}rerenderTop();};
 A.txDate=n=>{ui.tx.date=addDays(ui.tx.date,n);rerenderTop();};
 A.txSetDate=v=>{if(v){ui.tx.date=v;rerenderTop();}};
@@ -810,6 +817,7 @@ A.resetAll=()=>confirmDlg('Erase ALL data? This cannot be undone. Make a backup 
 
 /* ===================== INIT ===================== */
 load();applyTheme();ui.tab=S.settings.startTab==='tx'?'tx':'home';sortTx();postRecurring();render();cloudInit();
+if(/[?&]new=1/.test(location.search)||location.hash==='#new'){history.replaceState({n:0},'',location.pathname);setTimeout(()=>A.newTx(),80);}
 /* ---- PWA: service worker + update notice ---- */
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(reg=>{reg.addEventListener('updatefound',()=>{const nw=reg.installing;nw&&nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller){const t=document.createElement('div');t.className='toast';t.style.cursor='pointer';t.innerHTML='New version ready — tap to update';t.onclick=()=>location.reload();document.body.appendChild(t);}});});}).catch(e=>console.warn('sw',e));});}
 

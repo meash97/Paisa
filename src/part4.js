@@ -33,6 +33,8 @@ A.key=k=>{const d=ui.tx;let e=d.expr;const ops='+-*/';
  else{const last=e.split(/[+\-*/]/).pop();if(last==='0')e=e.slice(0,-1);if(last.replace('.','').length<10)e+=k;}
  d.expr=e;updateAmt();};
 function updateAmt(){const el=document.getElementById('amt');if(el){el.textContent=amtDisplay();el.className='amt '+(ui.tx.expr?'':'dim');}}
+A.txCycleAcc=dir=>{const accs=liveAccounts();if(!accs.length)return;const d=ui.tx;let i=accs.findIndex(a=>a.id===d.accountId);i=(i+dir+accs.length)%accs.length;if(d.type==='transfer'&&accs[i].id===d.toAccountId)i=(i+dir+accs.length)%accs.length;d.accountId=accs[i].id;rerenderTop();const el=document.getElementById('sheet-'+(sheets.length-1));if(el)scrollChipIntoView(el);if(navigator.vibrate)try{navigator.vibrate(8);}catch(e){}};
+A.txCycleType=dir=>{const T=['income','expense','transfer'];const i=(T.indexOf(ui.tx.type)+dir+3)%3;A.txType(T[i]);if(navigator.vibrate)try{navigator.vibrate(8);}catch(e){}};
 A.txType=k=>{const d=ui.tx;d.type=k;if(k!=='transfer'){const c=cat(d.categoryId);if(!c||c.type!==k){const f=catsOf(k)[0];d.categoryId=f?f.id:null;d.subId=null;}}rerenderTop();};
 A.txDate=n=>{ui.tx.date=addDays(ui.tx.date,n);rerenderTop();};
 A.txSetDate=v=>{if(v){ui.tx.date=v;rerenderTop();}};
@@ -209,5 +211,6 @@ A.resetAll=()=>confirmDlg('Erase ALL data? This cannot be undone. Make a backup 
 
 /* ===================== INIT ===================== */
 load();applyTheme();ui.tab=S.settings.startTab==='tx'?'tx':'home';sortTx();postRecurring();render();cloudInit();
+if(/[?&]new=1/.test(location.search)||location.hash==='#new'){history.replaceState({n:0},'',location.pathname);setTimeout(()=>A.newTx(),80);}
 /* ---- PWA: service worker + update notice ---- */
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(reg=>{reg.addEventListener('updatefound',()=>{const nw=reg.installing;nw&&nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller){const t=document.createElement('div');t.className='toast';t.style.cursor='pointer';t.innerHTML='New version ready — tap to update';t.onclick=()=>location.reload();document.body.appendChild(t);}});});}).catch(e=>console.warn('sw',e));});}
