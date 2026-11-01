@@ -67,8 +67,10 @@ input,select,textarea{font-family:inherit;font-size:calc(14px*var(--fs))}
 .hdr{display:flex;align-items:center;gap:6px;padding:12px 0 8px;position:sticky;top:0;background:var(--bg);z-index:3}
 .hdr h1{font-size:calc(24px*var(--fs));font-weight:400;margin:0;flex:1}
 .hdr h1.c{text-align:center}
-.sheet.tx{padding-bottom:0}
-.txbody{flex:1;overflow:auto;padding-bottom:10px}
+.sheet.tx{padding-bottom:0;top:auto;bottom:0;max-height:100%;border-radius:26px 26px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+.sheet.tx .hdr{padding-top:10px}
+.txbody{flex:0 1 auto;overflow:auto;padding-bottom:4px}
+.txscrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:49;max-width:520px;margin:0 auto}
 /* lists */
 .li{display:flex;align-items:center;gap:14px;padding:9px 4px}
 .li .nm{font-size:calc(17px*var(--fs))}
