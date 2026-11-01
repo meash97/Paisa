@@ -134,7 +134,7 @@ function defaultSettings(){return {currency:'₹',weekStart:1,cashflowPeriod:'mo
 const ACCENTS=['#4d87f5','#34c77b','#8b4ff5','#ec5f4f','#f5bd1f','#22b8e6','#e8365d','#ff7a1a'];
 function applyTheme(){const st=S.settings;const r=document.documentElement;r.style.setProperty('--fs',st.fontScale||1);r.style.setProperty('--blue',st.accent||'#4d87f5');r.classList.toggle('black',st.theme==='black');const app=document.getElementById('app');if(app)app.style.zoom=st.uiZoom||1;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=st.theme==='black'?'#000000':'#131417';}
 function seed(){
- const A=(name,icon,color,opening,extra)=>Object.assign({id:uid(),name,icon,color,opening,type:'regular',fav:false,archived:false},extra||{});
+ const A=(name,icon,color,opening,extra)=>{const a=Object.assign({id:uid(),name,icon,color,opening,type:'regular',fav:false,archived:false},extra||{});a.group=inferGroup(a);return a;};
  const accounts=[
   A('Cash','cash','#7cc41e',20304.11,{fav:true}),A('Canara Bank','bank','#ff7a1a',-37704.99),A('Kotak Bank','bank','#ff7a1a',47569.85),A('Wallet','piggy','#e8365d',500.10),
   A('Fanatic Fox','shirt','#7cc41e',-48867.83),A('Cash 2','bagMoney','#19c37d',0),A('Mobikwik','bagMoney','#8b4ff5',0),
@@ -159,7 +159,7 @@ function seed(){
   {id:uid(),name:'My expense',icon:'heart',color:'#3b82f6',amount:10000,categoryIds:[categories[1].id]}];
  return {version:1,settings:defaultSettings(),accounts,categories,transactions:[],budgets,recurring:[],meta:{created:today()}};
 }
-function load(){try{const raw=localStorage.getItem(LS_KEY);if(raw){S=JSON.parse(raw);S.settings=Object.assign(defaultSettings(),S.settings||{});S.settings.homeCards=Object.assign(defaultSettings().homeCards,S.settings.homeCards||{});const dO=defaultSettings().homeOrder;S.settings.homeOrder=(S.settings.homeOrder||[]).filter(k=>dO.includes(k)).concat(dO.filter(k=>!(S.settings.homeOrder||[]).includes(k)));S.recurring=S.recurring||[];S.budgets=S.budgets||[];S.meta=S.meta||{};return;}}catch(e){console.warn(e);}S=seed();S.meta.updated=0;persist();}
+function load(){try{const raw=localStorage.getItem(LS_KEY);if(raw){S=JSON.parse(raw);S.settings=Object.assign(defaultSettings(),S.settings||{});S.settings.homeCards=Object.assign(defaultSettings().homeCards,S.settings.homeCards||{});const dO=defaultSettings().homeOrder;S.settings.homeOrder=(S.settings.homeOrder||[]).filter(k=>dO.includes(k)).concat(dO.filter(k=>!(S.settings.homeOrder||[]).includes(k)));S.recurring=S.recurring||[];S.budgets=S.budgets||[];S.meta=S.meta||{};S.accounts.forEach(a=>{if(!a.group)a.group=inferGroup(a);if(a.type==='credit')a.group='credit';});return;}}catch(e){console.warn(e);}S=seed();S.meta.updated=0;persist();}
 function persist(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){toast('Could not save: '+e.message);}}
 function save(){S.meta=S.meta||{};S.meta.updated=Date.now();persist();cloudPush();}
 /* ---- optional cloud sync (only when hosted as a claude.ai artifact) ---- */
@@ -170,6 +170,9 @@ async function cloudInit(){if(!(window.claude&&typeof claude.use==='function'))r
  else{cloud.status='synced';if(!remote||(S.meta.updated||0)>(remote.updated||0))cloudPush(true);}render();}catch(e){console.warn('cloud',e);cloud.status='local';}}
 function cloudPush(now){if(!cloud.ref)return;clearTimeout(cloud.t);cloud.t=setTimeout(async()=>{if(cloud.busy){cloud.dirty=true;return;}cloud.busy=true;try{await cloud.ref.set({json:JSON.stringify(S),updated:S.meta.updated||Date.now()});cloud.status='synced';}catch(e){console.warn('cloud push',e);cloud.status='error';}cloud.busy=false;if(cloud.dirty){cloud.dirty=false;cloudPush();}},now?0:1500);}
 
+const GROUPS=[['cash','Cash'],['bank','Bank'],['wallet','Wallets'],['investment','Investments'],['credit','Credit cards'],['other','Other']];
+const groupLabel=k=>(GROUPS.find(g=>g[0]===k)||['','Other'])[1];
+function inferGroup(a){if(a.type==='credit')return 'credit';const n=(a.name||'').toLowerCase();if(/wallet|mobikwik|paytm|phonepe|gpay|amazon pay|upi/.test(n))return 'wallet';if(/fund|groww|zerodha|mutual|stock|share|sip|\bfd\b|gold|invest|ppf|nps/.test(n))return 'investment';if(/bank|\bau\b|sbi|hdfc|icici|axis|kotak|canara/.test(n))return 'bank';if(/cash/.test(n))return 'cash';return 'other';}
 /* ===================== LOOKUPS ===================== */
 const acc=id=>S.accounts.find(a=>a.id===id);
 const cat=id=>S.categories.find(c=>c.id===id);
