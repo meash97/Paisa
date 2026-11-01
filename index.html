@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Paisa — Money Manager</title>
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest?v=3">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234d87f5'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='white' font-family='Arial'%3E%E2%82%B9%3C/text%3E%3C/svg%3E">
 <style>
@@ -446,8 +446,8 @@ function openSheet(key,render,opts){opts=opts||{};sheets.push({key,render,live:o
 function closeSheet(){if(sheets.length)history.back();}
 window.addEventListener('popstate',()=>{const want=(history.state&&history.state.n)||0;while(sheets.length>want)sheets.pop();closeMenu();drawSheets();});
 history.replaceState({n:0},'');
-function drawSheets(){const host=document.getElementById('sheets');host.innerHTML='';sheets.forEach((s,i)=>{if(s.cls==='tx'){const sc=document.createElement('div');sc.className='txscrim';sc.onclick=closeSheet;host.appendChild(sc);}const d=document.createElement('div');d.className='sheet '+s.cls;d.id='sheet-'+i;d.innerHTML=s.render();host.appendChild(d);if(s.cls==='tx'){attachTxSwipe(d);scrollChipIntoView(d);}});document.body.style.overflow=sheets.length?'hidden':'';document.getElementById('fab').style.display=sheets.length?'none':'';}
-function rerenderTop(){if(!sheets.length)return;const i=sheets.length-1;const d=document.getElementById('sheet-'+i);if(d){const sc=d.scrollTop;d.innerHTML=sheets[i].render();d.scrollTop=sc;if(sheets[i].cls==='tx')scrollChipIntoView(d);}}
+function drawSheets(){const host=document.getElementById('sheets');host.innerHTML='';sheets.forEach((s,i)=>{if(s.cls==='tx'){const sc=document.createElement('div');sc.className='txscrim';sc.onclick=closeSheet;host.appendChild(sc);}const d=document.createElement('div');d.className='sheet '+s.cls;d.id='sheet-'+i;d.innerHTML=s.render();host.appendChild(d);if(s.cls==='tx'){attachTxSwipe(d);fixTxHeight(d);scrollChipIntoView(d);}});document.body.style.overflow=sheets.length?'hidden':'';document.getElementById('fab').style.display=sheets.length?'none':'';}
+function rerenderTop(){if(!sheets.length)return;const i=sheets.length-1;const d=document.getElementById('sheet-'+i);if(d){const sc=d.scrollTop;d.innerHTML=sheets[i].render();d.scrollTop=sc;if(sheets[i].cls==='tx'){fixTxHeight(d);scrollChipIntoView(d);}}}
 function refresh(){save();render();sheets.forEach((s,i)=>{if(!s.live)return;const d=document.getElementById('sheet-'+i);if(d){const sc=d.scrollTop;d.innerHTML=s.render();d.scrollTop=sc;}});}
 let toastT=null;function toast(m){let t=document.querySelector('.toast');if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);}t.textContent=m;clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2200);}
 function menu(e,items){closeMenu();const ov=document.getElementById('overlay');const r=e.currentTarget.getBoundingClientRect();const m=document.createElement('div');m.className='menu';m.innerHTML=items.map((it,i)=>`<button class="${it.on?'on':''}" data-i="${i}">${it.on?ic('check'):'<span style="width:22px"></span>'}<span>${esc(it.label)}</span></button>`).join('');const sc=document.createElement('div');sc.className='scrim';sc.onclick=closeMenu;ov.appendChild(sc);ov.appendChild(m);m.querySelectorAll('button').forEach(b=>b.onclick=()=>{closeMenu();items[+b.dataset.i].act();});const mw=m.offsetWidth,mh=m.offsetHeight;let left=Math.min(r.right-mw,window.innerWidth-mw-10);if(left<10)left=10;let top=r.bottom+6;if(top+mh>window.innerHeight-10)top=Math.max(10,r.top-mh-6);m.style.left=left+'px';m.style.top=top+'px';}
@@ -458,6 +458,14 @@ function confirmDlg(msg,ok){const ov=document.getElementById('overlay');ov.inner
 function attachTxSwipe(d){let sx=0,sy=0,t0=null,moved=false;d.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;t0=e.target;moved=false;},{passive:true});
  d.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<55||Math.abs(dy)>Math.abs(dx)*0.6)return;if(!t0||t0.closest('.chips,.subchips,input,.seg'))return;const dir=dx<0?1:-1;if(t0.closest('.keypad'))A.txCycleAcc(dir);else if(t0.closest('.txbody,.hdr'))A.txCycleType(dir);},{passive:true});}
 function scrollChipIntoView(d){const on=d.querySelector('.chips .chip.on');if(on&&on.scrollIntoView)try{on.scrollIntoView({inline:'center',block:'nearest'});}catch(e){}}
+
+/* keep the transaction sheet the same height for income / expense / transfer so swiping doesn't make it jump */
+function fixTxHeight(d){if(!ui.tx)return;const body=d.querySelector('.txbody');if(!body)return;
+ if(!ui.txBodyH){const cur={type:ui.tx.type,cat:ui.tx.categoryId,sub:ui.tx.subId};const probe=document.createElement('div');probe.className='sheet tx';probe.style.cssText='visibility:hidden;pointer-events:none;';document.body.appendChild(probe);let max=0;
+  ['income','expense','transfer'].forEach(t=>{ui.tx.type=t;if(t!=='transfer'){const f=catsOf(t)[0];ui.tx.categoryId=f?f.id:null;ui.tx.subId=null;}probe.innerHTML=renderTxSheet();const b=probe.querySelector('.txbody');if(b)max=Math.max(max,b.scrollHeight);});
+  ui.tx.type=cur.type;ui.tx.categoryId=cur.cat;ui.tx.subId=cur.sub;probe.remove();
+  const kp=d.querySelector('.keypad'),hd=d.querySelector('.hdr');const avail=window.innerHeight-(kp?kp.offsetHeight:0)-(hd?hd.offsetHeight:0)-24;ui.txBodyH=Math.min(max,avail);}
+ body.style.height=ui.txBodyH+'px';body.style.flex='none';}
 /* ===================== MAIN SCREENS ===================== */
 const A={};
 function render(){const sc=document.getElementById('screen');const top=sc.scrollTop;sc.innerHTML=({home:renderHome,cats:renderCats,ana:renderAna,tx:renderTx})[ui.tab]();
@@ -609,7 +617,7 @@ function defaultAccount(){const l=liveAccounts();return (l.find(a=>a.fav)||l[0]|
 function newDraft(o){o=o||{};const type=o.type||S.settings.defaultTxType||'expense';const c=catsOf(type)[0];return Object.assign({id:null,type,date:today(),time:nowTime(),accountId:defaultAccount(),toAccountId:null,categoryId:c?c.id:null,subId:null,note:'',expr:'',repeat:'never'},o);}
 A.newTx=o=>{ui.tx=newDraft(o);openTxSheet();};
 A.editTx=id=>{const t=S.transactions.find(x=>x.id===id);if(!t)return;ui.tx=Object.assign(newDraft({type:t.type}),t,{expr:String(t.amount),repeat:'never'});openTxSheet();};
-function openTxSheet(){openSheet('tx',renderTxSheet,{live:false,cls:'tx'});}
+function openTxSheet(){ui.txBodyH=null;openSheet('tx',renderTxSheet,{live:false,cls:'tx'});}
 function renderTxSheet(){const d=ui.tx;const accs=liveAccounts();const cats=catsOf(d.type);const c=cat(d.categoryId);const subs=c?(c.subs||[]):[];const isEdit=!!d.id;
  const accChip=(a,sel,fn)=>`<button class="chip ${sel?'on':''}" style="${sel?'background:'+a.color:''}" onclick="${fn}('${a.id}')">${tile(a.icon,a.color,'sm')}<div><div class="n">${esc(a.name)}</div><div class="b">${fmt(accBalance(a.id))}</div></div></button>`;
  let h=`<div class="hdr"><button class="ibtn" onclick="closeSheet()">${ic('close')}</button><h1 class="c">${isEdit?'Edit transaction':'New transaction'}</h1>${isEdit?`<button class="ibtn" onclick="A.deleteTx()">${ic('trash')}</button>`:'<span style="width:42px"></span>'}</div><div class="txbody">`;
@@ -620,7 +628,8 @@ function renderTxSheet(){const d=ui.tx;const accs=liveAccounts();const cats=cats
  h+=`<div id="amt" class="amt ${d.expr?'':'dim'}">${amtDisplay()}</div><div class="amtline"></div>`;
  h+=`<input class="note" placeholder="Add note" value="${esc(d.note)}" oninput="ui.tx.note=this.value">`;
  if(d.type!=='transfer'){h+=`<div class="chips">${cats.map(x=>`<button class="cchip ${x.id===d.categoryId?'on':''}" style="${x.id===d.categoryId?'color:'+x.color:''}" onclick="A.txCat('${x.id}')">${tile(x.icon,x.color)}<span style="color:#ececef">${esc(x.name)}</span></button>`).join('')}<button class="cchip" onclick="A.editCat(null,'${d.type}')">${tile('plus','#44454c')}<span style="color:var(--muted)">New</span></button></div>`;
-  if(subs.length)h+=`<div class="subchips"><button class="${!d.subId?'on':''}" onclick="A.txSub(null)">None</button>${subs.map(s=>`<button class="${s.id===d.subId?'on':''}" onclick="A.txSub('${s.id}')"><span class="tile xs round" style="background:${s.color||c.color}">${ic(s.icon)}</span>${esc(s.name)}</button>`).join('')}</div>`;}
+  if(!subs.length)h+=`<div class="subchips"><button disabled style="opacity:.45">No subcategories</button></div>`;
+  else h+=`<div class="subchips"><button class="${!d.subId?'on':''}" onclick="A.txSub(null)">None</button>${subs.map(s=>`<button class="${s.id===d.subId?'on':''}" onclick="A.txSub('${s.id}')"><span class="tile xs round" style="background:${s.color||c.color}">${ic(s.icon)}</span>${esc(s.name)}</button>`).join('')}</div>`;}
  if(!isEdit)h+=`<div class="row" style="justify-content:center;padding:2px 0 8px"><button class="btn sm ghost" onclick="A.txRepeatMenu(event)">${ic('repeat')} Repeat: ${d.repeat==='never'?'Never':d.repeat[0].toUpperCase()+d.repeat.slice(1)}</button></div>`;
  h+=`</div><div class="keypad">
  <button class="op" onclick="A.key('÷')">÷</button><button onclick="A.key('7')">7</button><button onclick="A.key('8')">8</button><button onclick="A.key('9')">9</button><button class="op" onclick="A.key('bs')">${ic('backspace')}</button>

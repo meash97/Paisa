@@ -3,7 +3,7 @@ function defaultAccount(){const l=liveAccounts();return (l.find(a=>a.fav)||l[0]|
 function newDraft(o){o=o||{};const type=o.type||S.settings.defaultTxType||'expense';const c=catsOf(type)[0];return Object.assign({id:null,type,date:today(),time:nowTime(),accountId:defaultAccount(),toAccountId:null,categoryId:c?c.id:null,subId:null,note:'',expr:'',repeat:'never'},o);}
 A.newTx=o=>{ui.tx=newDraft(o);openTxSheet();};
 A.editTx=id=>{const t=S.transactions.find(x=>x.id===id);if(!t)return;ui.tx=Object.assign(newDraft({type:t.type}),t,{expr:String(t.amount),repeat:'never'});openTxSheet();};
-function openTxSheet(){openSheet('tx',renderTxSheet,{live:false,cls:'tx'});}
+function openTxSheet(){ui.txBodyH=null;openSheet('tx',renderTxSheet,{live:false,cls:'tx'});}
 function renderTxSheet(){const d=ui.tx;const accs=liveAccounts();const cats=catsOf(d.type);const c=cat(d.categoryId);const subs=c?(c.subs||[]):[];const isEdit=!!d.id;
  const accChip=(a,sel,fn)=>`<button class="chip ${sel?'on':''}" style="${sel?'background:'+a.color:''}" onclick="${fn}('${a.id}')">${tile(a.icon,a.color,'sm')}<div><div class="n">${esc(a.name)}</div><div class="b">${fmt(accBalance(a.id))}</div></div></button>`;
  let h=`<div class="hdr"><button class="ibtn" onclick="closeSheet()">${ic('close')}</button><h1 class="c">${isEdit?'Edit transaction':'New transaction'}</h1>${isEdit?`<button class="ibtn" onclick="A.deleteTx()">${ic('trash')}</button>`:'<span style="width:42px"></span>'}</div><div class="txbody">`;
@@ -14,7 +14,8 @@ function renderTxSheet(){const d=ui.tx;const accs=liveAccounts();const cats=cats
  h+=`<div id="amt" class="amt ${d.expr?'':'dim'}">${amtDisplay()}</div><div class="amtline"></div>`;
  h+=`<input class="note" placeholder="Add note" value="${esc(d.note)}" oninput="ui.tx.note=this.value">`;
  if(d.type!=='transfer'){h+=`<div class="chips">${cats.map(x=>`<button class="cchip ${x.id===d.categoryId?'on':''}" style="${x.id===d.categoryId?'color:'+x.color:''}" onclick="A.txCat('${x.id}')">${tile(x.icon,x.color)}<span style="color:#ececef">${esc(x.name)}</span></button>`).join('')}<button class="cchip" onclick="A.editCat(null,'${d.type}')">${tile('plus','#44454c')}<span style="color:var(--muted)">New</span></button></div>`;
-  if(subs.length)h+=`<div class="subchips"><button class="${!d.subId?'on':''}" onclick="A.txSub(null)">None</button>${subs.map(s=>`<button class="${s.id===d.subId?'on':''}" onclick="A.txSub('${s.id}')"><span class="tile xs round" style="background:${s.color||c.color}">${ic(s.icon)}</span>${esc(s.name)}</button>`).join('')}</div>`;}
+  if(!subs.length)h+=`<div class="subchips"><button disabled style="opacity:.45">No subcategories</button></div>`;
+  else h+=`<div class="subchips"><button class="${!d.subId?'on':''}" onclick="A.txSub(null)">None</button>${subs.map(s=>`<button class="${s.id===d.subId?'on':''}" onclick="A.txSub('${s.id}')"><span class="tile xs round" style="background:${s.color||c.color}">${ic(s.icon)}</span>${esc(s.name)}</button>`).join('')}</div>`;}
  if(!isEdit)h+=`<div class="row" style="justify-content:center;padding:2px 0 8px"><button class="btn sm ghost" onclick="A.txRepeatMenu(event)">${ic('repeat')} Repeat: ${d.repeat==='never'?'Never':d.repeat[0].toUpperCase()+d.repeat.slice(1)}</button></div>`;
  h+=`</div><div class="keypad">
  <button class="op" onclick="A.key('÷')">÷</button><button onclick="A.key('7')">7</button><button onclick="A.key('8')">8</button><button onclick="A.key('9')">9</button><button class="op" onclick="A.key('bs')">${ic('backspace')}</button>
