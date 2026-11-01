@@ -95,6 +95,12 @@ input,select,textarea{font-family:inherit;font-size:calc(14px*var(--fs))}
 .arow .n{font-size:calc(16px*var(--fs))}.arow .b{font-size:calc(16px*var(--fs));color:#e4e5e9;white-space:nowrap;margin-left:8px}
 .arow .bar{height:6px;background:transparent;border-radius:4px;margin-top:6px;overflow:hidden}
 .arow .bar i{display:block;height:100%;border-radius:4px;min-width:2px}
+.acards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.acard{background:var(--card3);border-radius:14px;padding:10px 8px 9px;cursor:pointer;min-width:0;text-align:center}
+.acard .tile{margin:0 auto 7px}
+.acard .n{font-size:calc(12px*var(--fs));color:var(--muted);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(2.4em)}
+.acard .b{font-size:calc(13px*var(--fs));margin-top:2px;font-weight:500}
+.acard .badge{width:15px;height:15px;right:-4px;bottom:-4px;border-color:var(--card3)}.acard .badge .ico{width:8px;height:8px}
 /* chips */
 .chips{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}

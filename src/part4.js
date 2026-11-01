@@ -167,6 +167,7 @@ A.settings=()=>openSheet('settings',()=>{const st=S.settings;
  <div class="setrow"><div class="grow nm">Theme</div>${seg([['dark','Dark'],['black','Black (OLED)']],st.theme,'A.setTheme')}</div>
  <div class="setrow"><div class="nm">Accent colour</div></div><div class="accents">${ACCENTS.map(c=>`<span class="${st.accent===c?'on':''}" style="background:${c}" onclick="A.set('accent','${c}')"></span>`).join('')}</div>
  <div class="sec">Home screen</div>
+ <div class="setrow"><div class="grow nm">Accounts layout</div>${seg([['bars','List + bars'],['cards','Cards (4 per row)']],st.accountsLayout||'bars','A.setAccLayout')}</div>
  <div class="hint">Switch cards on/off and use the arrows to change their order.</div>
  ${(st.homeOrder||[]).map((k,i)=>`<div class="setrow"><div class="row" style="gap:0"><button class="ibtn muted" style="padding:4px" onclick="A.homeMove('${k}',-1)">${ic('arrowUp')}</button><button class="ibtn muted" style="padding:4px" onclick="A.homeMove('${k}',1)">${ic('arrowDown')}</button></div><div class="grow nm">${names[k]||k}</div>${sw(st.homeCards[k],`A.toggleCard('${k}')`)}</div>`).join('')}
  <div class="sec">Behaviour</div>
@@ -192,7 +193,7 @@ A.settings=()=>openSheet('settings',()=>{const st=S.settings;
  <div class="row" style="gap:10px;padding:6px 0"><button class="btn sm danger" onclick="A.resetAll()">Erase everything</button></div>
  <div class="sec">About</div><div class="hint">Paisa · a private, offline money manager. Add this page to your home screen to use it like an app.</div>`;});
 A.set=(k,v,light)=>{S.settings[k]=v;persist();S.meta.updated=Date.now();cloudPush();applyTheme();if(!light){render();rerenderTop();}};
-A.setTheme=v=>A.set('theme',v);A.setStart=v=>A.set('startTab',v);A.setDefType=v=>A.set('defaultTxType',v);A.setNumFmt=v=>A.set('numFmt',v);A.setDecimals=v=>A.set('decimals',v);A.setWeekStart=v=>A.set('weekStart',+v);
+A.setTheme=v=>A.set('theme',v);A.setAccLayout=v=>A.set('accountsLayout',v);A.setStart=v=>A.set('startTab',v);A.setDefType=v=>A.set('defaultTxType',v);A.setNumFmt=v=>A.set('numFmt',v);A.setDecimals=v=>A.set('decimals',v);A.setWeekStart=v=>A.set('weekStart',+v);
 A.toggleCard=k=>{S.settings.homeCards[k]=!S.settings.homeCards[k];refresh();};
 A.homeMove=(k,d)=>{const o=S.settings.homeOrder;const i=o.indexOf(k),j=i+d;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];refresh();};
 async function download(name,content,type){if(window.claude&&typeof claude.use==='function'){try{const dl=await claude.use('downloads');if(dl){try{await dl.save({filename:name,data:content});}catch(e){if(!/declin|cancel|abort/i.test(String(e&&e.message)))throw e;}return;}}catch(e){console.warn(e);}
