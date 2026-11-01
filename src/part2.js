@@ -88,6 +88,8 @@ scissors:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8
 camera:'<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/>',
 game:'<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4"/><circle cx="16" cy="11.5" r="1" fill="currentColor"/><circle cx="18.5" cy="13.5" r="1" fill="currentColor"/>',
 cake:'<path d="M4 20h16v-7H4z"/><path d="M4 16c2 2 4-2 6 0s4-2 6 0 4 0 4 0"/><path d="M12 13V9M12 6v1"/><circle cx="12" cy="5" r="1" fill="currentColor"/>',
+eye:'<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+eyeOff:'<path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2"/><path d="M9.9 5.2A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2"/><path d="M6.6 6.6C3.8 8.6 2 12 2 12s3.5 7 10 7c1.4 0 2.7-.3 3.8-.7"/>',
 people:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14a5 5 0 0 1 6 5"/>',
 };
 const PICK_ICONS=['home','heart','bank','card','cash','wallet','piggy','bagMoney','handMoney','coins','gem','gold','candles','shirt','bag','cart','briefcase','note','food','coffee','cake','phone','wifi','tv','bolt','drop','fuel','car','scooter','bus','plane','gift','ticket','party','people','baby','school','book','medical','pill','dumbbell','paw','tree','building','key','wrench','scissors','camera','game','film','music','percent','tag','star','target','chart','sparkle','repeat','umbrella'];
@@ -128,7 +130,9 @@ function periodRange(kind,off){const t=today();
 const LS_KEY='paisa.v1';
 let S=null;
 const ui={tab:'home',homePeriod:'month',homeOff:0,anaOff:0,anaGran:'D',anaSeries:{income:true,expense:true,total:false},catOff:0,catType:'expense',txOff:0,txSearch:'',txFilter:{types:[],accounts:[],categories:[]},txCal:false,txDay:null,tx:null,draft:null};
-function defaultSettings(){return {currency:'₹',weekStart:1,cashflowPeriod:'month',homeCatType:'expense',homeCards:{credit:true,accounts:true,categories:true,cashflow:true,budgets:true},lastBackup:null};}
+function defaultSettings(){return {currency:'₹',weekStart:1,cashflowPeriod:'month',homeCatType:'expense',homeCards:{credit:true,accounts:true,categories:true,cashflow:true,budgets:true},homeOrder:['accounts','credit','categories','cashflow','budgets'],lastBackup:null,uiZoom:1,fontScale:1,theme:'dark',accent:'#4d87f5',numFmt:'intl',decimals:'auto',hideBalances:false,startTab:'home',defaultTxType:'expense',backupDays:7};}
+const ACCENTS=['#4d87f5','#34c77b','#8b4ff5','#ec5f4f','#f5bd1f','#22b8e6','#e8365d','#ff7a1a'];
+function applyTheme(){const st=S.settings;const r=document.documentElement;r.style.setProperty('--fs',st.fontScale||1);r.style.setProperty('--blue',st.accent||'#4d87f5');r.classList.toggle('black',st.theme==='black');const app=document.getElementById('app');if(app)app.style.zoom=st.uiZoom||1;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=st.theme==='black'?'#000000':'#131417';}
 function seed(){
  const A=(name,icon,color,opening,extra)=>Object.assign({id:uid(),name,icon,color,opening,type:'regular',fav:false,archived:false},extra||{});
  const accounts=[
@@ -155,7 +159,7 @@ function seed(){
   {id:uid(),name:'My expense',icon:'heart',color:'#3b82f6',amount:10000,categoryIds:[categories[1].id]}];
  return {version:1,settings:defaultSettings(),accounts,categories,transactions:[],budgets,recurring:[],meta:{created:today()}};
 }
-function load(){try{const raw=localStorage.getItem(LS_KEY);if(raw){S=JSON.parse(raw);S.settings=Object.assign(defaultSettings(),S.settings||{});S.settings.homeCards=Object.assign(defaultSettings().homeCards,S.settings.homeCards||{});S.recurring=S.recurring||[];S.budgets=S.budgets||[];S.meta=S.meta||{};return;}}catch(e){console.warn(e);}S=seed();S.meta.updated=0;persist();}
+function load(){try{const raw=localStorage.getItem(LS_KEY);if(raw){S=JSON.parse(raw);S.settings=Object.assign(defaultSettings(),S.settings||{});S.settings.homeCards=Object.assign(defaultSettings().homeCards,S.settings.homeCards||{});const dO=defaultSettings().homeOrder;S.settings.homeOrder=(S.settings.homeOrder||[]).filter(k=>dO.includes(k)).concat(dO.filter(k=>!(S.settings.homeOrder||[]).includes(k)));S.recurring=S.recurring||[];S.budgets=S.budgets||[];S.meta=S.meta||{};return;}}catch(e){console.warn(e);}S=seed();S.meta.updated=0;persist();}
 function persist(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){toast('Could not save: '+e.message);}}
 function save(){S.meta=S.meta||{};S.meta.updated=Date.now();persist();cloudPush();}
 /* ---- optional cloud sync (only when hosted as a claude.ai artifact) ---- */
@@ -176,7 +180,7 @@ function sortTx(){S.transactions.sort((a,b)=>(b.date+b.time).localeCompare(a.dat
 
 /* ===================== MONEY ===================== */
 function num(n){return Math.round((+n||0)*100)/100;}
-function fmt(n,o){o=o||{};let v=num(n);const a=Math.abs(v);const str=Number.isInteger(a)?a.toLocaleString('en-US'):a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});let out=S.settings.currency+str;if(v<0&&!o.abs)out='-'+out;else if(o.sign&&v>0)out='+'+out;return out;}
+function fmt(n,o){o=o||{};const st=S.settings;if(st.hideBalances&&!o.force)return st.currency+'••••';let v=num(n);const a=Math.abs(v);const loc=st.numFmt==='indian'?'en-IN':'en-US';const str=(Number.isInteger(a)&&st.decimals!=='always')?a.toLocaleString(loc):a.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});let out=st.currency+str;if(v<0&&!o.abs)out='-'+out;else if(o.sign&&v>0)out='+'+out;return out;}
 function fmtK(n){const a=Math.abs(n);let s;if(a>=1e6)s=(a/1e6).toFixed(a%1e6?1:0).replace(/\.0$/,'')+'M';else if(a>=1000)s=(a/1000).toFixed(a%1000?1:0).replace(/\.0$/,'')+'k';else s=Math.round(a).toString();return (n<0?'-':'')+S.settings.currency+s;}
 function cls(n){return n>0?'pos':n<0?'neg':'';}
 
