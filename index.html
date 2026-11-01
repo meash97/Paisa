@@ -98,7 +98,8 @@ input,select,textarea{font-family:inherit;font-size:calc(14px*var(--fs))}
 .acards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .acard{background:var(--card3);border-radius:14px;padding:10px 8px 9px;cursor:pointer;min-width:0;text-align:center}
 .acard .tile{margin:0 auto 7px}
-.acard .n{font-size:calc(12px*var(--fs));color:var(--muted);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(2.4em)}
+.acards.c3 .acard .n{font-size:calc(13px*var(--fs))}
+.acard .n{font-size:calc(12px*var(--fs));color:var(--muted);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .acard .b{font-size:calc(13px*var(--fs));margin-top:2px;font-weight:500}
 .acard .badge{width:15px;height:15px;right:-4px;bottom:-4px;border-color:var(--card3)}.acard .badge .ico{width:8px;height:8px}
 /* chips */
@@ -359,7 +360,7 @@ function periodRange(kind,off){const t=today();
 const LS_KEY='paisa.v1';
 let S=null;
 const ui={tab:'home',homePeriod:'month',homeOff:0,anaOff:0,anaGran:'D',anaSeries:{income:true,expense:true,total:false},catOff:0,catType:'expense',txOff:0,txSearch:'',txFilter:{types:[],accounts:[],categories:[]},txCal:false,txDay:null,tx:null,draft:null};
-function defaultSettings(){return {currency:'₹',weekStart:1,cashflowPeriod:'month',homeCatType:'expense',homeCards:{credit:true,accounts:true,categories:true,cashflow:true,budgets:true},homeOrder:['accounts','credit','categories','cashflow','budgets'],lastBackup:null,uiZoom:1,fontScale:1,theme:'dark',accent:'#4d87f5',numFmt:'intl',decimals:'auto',hideBalances:false,startTab:'home',defaultTxType:'expense',backupDays:7,accountsLayout:'bars',groupOrder:['cash','bank','wallet','investment','other']};}
+function defaultSettings(){return {currency:'₹',weekStart:1,cashflowPeriod:'month',homeCatType:'expense',homeCards:{credit:true,accounts:true,categories:true,cashflow:true,budgets:true},homeOrder:['accounts','credit','categories','cashflow','budgets'],lastBackup:null,uiZoom:1,fontScale:1,theme:'dark',accent:'#4d87f5',numFmt:'intl',decimals:'auto',hideBalances:false,startTab:'home',defaultTxType:'expense',backupDays:7,accountsLayout:'bars',cardsPerRow:4,groupOrder:['cash','bank','wallet','investment','other']};}
 function orderedGroups(){const o=(S.settings.groupOrder||[]).filter(k=>GROUPS.some(g=>g[0]===k));GROUPS.forEach(g=>{if(g[0]!=='credit'&&!o.includes(g[0]))o.push(g[0]);});return o.map(k=>GROUPS.find(g=>g[0]===k)).concat([GROUPS.find(g=>g[0]==='credit')]);}
 const ACCENTS=['#4d87f5','#34c77b','#8b4ff5','#ec5f4f','#f5bd1f','#22b8e6','#e8365d','#ff7a1a'];
 function applyTheme(){const st=S.settings;const r=document.documentElement;r.style.setProperty('--fs',st.fontScale||1);r.style.setProperty('--blue',st.accent||'#4d87f5');r.classList.toggle('black',st.theme==='black');const app=document.getElementById('app');if(app)app.style.zoom=st.uiZoom||1;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=st.theme==='black'?'#000000':'#131417';}
@@ -516,7 +517,7 @@ function renderHome(){const st=S.settings;const period=periodRange(ui.homePeriod
  accounts:()=>{const vis=liveAccounts().filter(a=>a.type!=='credit'&&!a.hideHome);const total=vis.reduce((s,a)=>s+accBalance(a.id),0);const cards=st.accountsLayout==='cards';let h=`<div class="chead"><div class="t"><h2>Accounts</h2></div><div class="right" style="margin-right:2px"><div class="${total<0?'neg':''}" style="font-size:calc(18px*var(--fs))">${fmt(total)}</div></div><button class="ibtn muted" onclick="A.set('accountsLayout','${cards?'bars':'cards'}')" title="Switch layout">${ic(cards?'list':'grid')}</button><button class="ibtn muted" style="margin-left:-6px" onclick="A.accounts()">${ic('chevR')}</button></div>`;
   const bals={};vis.forEach(a=>bals[a.id]=accBalance(a.id));const maxAbs=Math.max(1,...vis.map(a=>Math.abs(bals[a.id])));
   orderedGroups().forEach(([k,label])=>{const list=vis.filter(a=>(a.group||inferGroup(a))===k);if(!list.length)return;const sub=list.reduce((s,a)=>s+bals[a.id],0);h+=`<div class="grp"><div class="row grph"><div class="grow">${label}</div><div class="${sub<0?'neg':''}">${fmt(sub)}</div></div>`;
-   if(cards){h+=`<div class="acards">`+list.map(a=>{const b=bals[a.id];return `<div class="acard" onclick="A.openAccount('${a.id}')">${tile(a.icon,a.color,'sm',a.fav?`<span class="badge">${ic('heart')}</span>`:'')}<div class="n">${esc(a.name)}</div><div class="b ell ${b<0?'neg':''}" title="${fmt(b)}">${S.settings.hideBalances?fmt(b):(Math.abs(b)>=10000?fmtK(b):fmt(b))}</div></div>`;}).join('')+'</div></div>';return;}
+   if(cards){h+=`<div class="acards" style="grid-template-columns:repeat(${st.cardsPerRow||4},1fr)">`+list.map(a=>{const b=bals[a.id];return `<div class="acard" onclick="A.openAccount('${a.id}')">${tile(a.icon,a.color,'sm',a.fav?`<span class="badge">${ic('heart')}</span>`:'')}<div class="n">${esc(a.name)}</div><div class="b ell ${b<0?'neg':''}" title="${fmt(b)}">${S.settings.hideBalances?fmt(b):((st.cardsPerRow||4)>=4&&Math.abs(b)>=10000?fmtK(b):fmt(b))}</div></div>`;}).join('')+'</div></div>';return;}
    list.forEach(a=>{const b=bals[a.id];const w=Math.abs(b)/maxAbs*100;h+=`<div class="arow" onclick="A.openAccount('${a.id}')">${tile(a.icon,a.color,'',a.fav?`<span class="badge">${ic('heart')}</span>`:'')}<div class="grow"><div class="row"><div class="n grow ell">${esc(a.name)}</div><div class="b ${b<0?'neg':''}">${fmt(b)}</div></div><div class="bar"><i style="width:${w.toFixed(1)}%;background:${b<0?'#ec5f4f':a.color}"></i></div></div></div>`;});h+='</div>';});
   if(!vis.length)h+='<div class="empty">No accounts shown. Turn them on in Accounts → edit.</div>';return `<div class="card">${h}</div>`;},
  categories:()=>{const r=monthRange(0);const type=st.homeCatType;const rows=catsOf(type).map(c=>({c,v:flow(r.start,r.end,{catIds:[c.id]})[type]})).sort((a,b)=>b.v-a.v);
@@ -808,7 +809,8 @@ A.settings=()=>openSheet('settings',()=>{const st=S.settings;
  <div class="setrow"><div class="grow nm">Theme</div>${seg([['dark','Dark'],['black','Black (OLED)']],st.theme,'A.setTheme')}</div>
  <div class="setrow"><div class="nm">Accent colour</div></div><div class="accents">${ACCENTS.map(c=>`<span class="${st.accent===c?'on':''}" style="background:${c}" onclick="A.set('accent','${c}')"></span>`).join('')}</div>
  <div class="sec">Home screen</div>
- <div class="setrow"><div class="grow nm">Accounts layout</div>${seg([['bars','List + bars'],['cards','Cards (4 per row)']],st.accountsLayout||'bars','A.setAccLayout')}</div>
+ <div class="setrow"><div class="grow nm">Accounts layout</div>${seg([['bars','List + bars'],['cards','Cards']],st.accountsLayout||'bars','A.setAccLayout')}</div>
+ ${(st.accountsLayout==='cards')?`<div class="setrow"><div class="grow nm">Cards per row</div>${seg([['3','3'],['4','4']],String(st.cardsPerRow||4),'A.setCardsPerRow')}</div>`:''}
  <div class="setrow"><div class="grow"><div class="nm">Account group order</div><div class="small">Order of Cash / Bank / Wallets / Investments / Other on Home</div></div></div>
  ${orderedGroups().filter(g=>g[0]!=='credit').map(([k,l])=>`<div class="setrow" style="padding:4px 4px"><div class="row" style="gap:0"><button class="ibtn muted" style="padding:4px" onclick="A.groupMove('${k}',-1)">${ic('arrowUp')}</button><button class="ibtn muted" style="padding:4px" onclick="A.groupMove('${k}',1)">${ic('arrowDown')}</button></div><div class="grow nm">${l}</div></div>`).join('')}
  <div class="hint" style="margin-top:8px">Home cards — switch on/off and use the arrows to change their order.</div>
@@ -836,7 +838,7 @@ A.settings=()=>openSheet('settings',()=>{const st=S.settings;
  <div class="row" style="gap:10px;padding:6px 0"><button class="btn sm danger" onclick="A.resetAll()">Erase everything</button></div>
  <div class="sec">About</div><div class="hint">Paisa · a private, offline money manager. Add this page to your home screen to use it like an app.</div>`;});
 A.set=(k,v,light)=>{S.settings[k]=v;persist();S.meta.updated=Date.now();cloudPush();applyTheme();if(!light){render();rerenderTop();}};
-A.setTheme=v=>A.set('theme',v);A.setAccLayout=v=>A.set('accountsLayout',v);A.setStart=v=>A.set('startTab',v);A.setDefType=v=>A.set('defaultTxType',v);A.setNumFmt=v=>A.set('numFmt',v);A.setDecimals=v=>A.set('decimals',v);A.setWeekStart=v=>A.set('weekStart',+v);
+A.setTheme=v=>A.set('theme',v);A.setAccLayout=v=>A.set('accountsLayout',v);A.setCardsPerRow=v=>A.set('cardsPerRow',+v);A.setStart=v=>A.set('startTab',v);A.setDefType=v=>A.set('defaultTxType',v);A.setNumFmt=v=>A.set('numFmt',v);A.setDecimals=v=>A.set('decimals',v);A.setWeekStart=v=>A.set('weekStart',+v);
 A.toggleCard=k=>{S.settings.homeCards[k]=!S.settings.homeCards[k];refresh();};
 A.homeMove=(k,d)=>{const o=S.settings.homeOrder;const i=o.indexOf(k),j=i+d;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];refresh();};
 async function download(name,content,type){if(window.claude&&typeof claude.use==='function'){try{const dl=await claude.use('downloads');if(dl){try{await dl.save({filename:name,data:content});}catch(e){if(!/declin|cancel|abort/i.test(String(e&&e.message)))throw e;}return;}}catch(e){console.warn(e);}
