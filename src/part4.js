@@ -168,7 +168,8 @@ A.settings=()=>openSheet('settings',()=>{const st=S.settings;
  <div class="setrow"><div class="grow nm">Theme</div>${seg([['dark','Dark'],['black','Black'],['light','White']],st.theme,'A.setTheme')}</div>
  <div class="setrow"><div class="nm">Accent colour</div></div><div class="accents">${ACCENTS.map(c=>`<span class="${st.accent===c?'on':''}" style="background:${c}" onclick="A.set('accent','${c}')"></span>`).join('')}</div>
  <div class="sec">Home screen</div>
- <div class="setrow"><div class="grow nm">Accounts layout</div>${seg([['bars','List + bars'],['cards','Cards']],st.accountsLayout||'bars','A.setAccLayout')}</div>
+ <div class="setrow"><div class="grow nm">Accounts layout</div>${seg([['grid','Classic'],['bars','List + bars'],['cards','Cards']],st.accountsLayout||'bars','A.setAccLayout')}</div>
+ <div class="setrow"><div class="grow"><div class="nm">Group accounts</div><div class="small">Off = one plain list like the original view</div></div><span class="sw ${st.groupAccounts!==false?'on':''}" onclick="A.set('groupAccounts',${st.groupAccounts===false?'true':'false'})"></span></div>
  ${(st.accountsLayout==='cards')?`<div class="setrow"><div class="grow nm">Cards per row</div>${seg([['3','3'],['4','4']],String(st.cardsPerRow||4),'A.setCardsPerRow')}</div>`:''}
  <div class="setrow"><div class="grow"><div class="nm">Account group order</div><div class="small">Order of Cash / Bank / Wallets / Investments / Other on Home</div></div></div>
  ${orderedGroups().filter(g=>g[0]!=='credit').map(([k,l])=>`<div class="setrow" style="padding:4px 4px"><div class="row" style="gap:0"><button class="ibtn muted" style="padding:4px" onclick="A.groupMove('${k}',-1)">${ic('arrowUp')}</button><button class="ibtn muted" style="padding:4px" onclick="A.groupMove('${k}',1)">${ic('arrowDown')}</button></div><div class="grow nm">${l}</div></div>`).join('')}
