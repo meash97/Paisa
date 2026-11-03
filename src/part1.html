@@ -83,7 +83,11 @@ input,select,textarea{font-family:inherit;font-size:calc(14px*var(--fs))}
 .cb.on{background:var(--blue);border-color:var(--blue)}
 .cb .ico{width:18px;height:18px;color:#fff}
 /* accounts grid */
-.agrid{display:grid;grid-template-columns:1fr 1fr;gap:9px 10px}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:17px 10px}
+.agrid.classic .tile{width:32px;height:32px;border-radius:9px}.agrid.classic .tile .ico{width:18px;height:18px}.agrid.classic .badge{width:15px;height:15px;right:-4px;bottom:-4px}.agrid.classic .badge .ico{width:8px;height:8px}
+.agrid.classic .aitem{gap:12px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.aitem.dragging{opacity:.25}
+.aitem.ghost{position:fixed;z-index:80;pointer-events:none;background:var(--card2);border-radius:14px;padding:6px 10px;box-shadow:0 10px 30px rgba(0,0,0,.45);width:46%}
 .aitem{display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer}
 .aitem .tile{width:36px;height:36px;border-radius:10px}.aitem .tile .ico{width:20px;height:20px}.aitem .badge{width:17px;height:17px;right:-4px;bottom:-4px}.aitem .badge .ico{width:9px;height:9px}
 .aitem .n{font-size:calc(15px*var(--fs));line-height:1.2}
